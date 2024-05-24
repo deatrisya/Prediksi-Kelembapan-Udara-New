@@ -1,0 +1,90 @@
+{% extends 'layouts/main.html' %}
+{% block content %}
+<h1 class="text-center m-3">
+    Prediksi Kelembapan Udara Menggunakan Backpropagation dengan Penerapan Seleksi Fitur Berbasis Algoritma Genetika
+</h1>
+
+<div class="container">
+    <form class="row g-3" action="{{ url_for('predict') }}" method="post">
+        <div class="col">
+            <label for="exampleFormControlInput1" class="form-label">Variabel Po</label>
+            <input type="text" class="form-control" name="var_po" placeholder="758.2" required>
+            <small class="text-danger">Harap gunakan titik (.) sebagai pemisah desimal, bukan koma</small>
+        </div>
+        <div class="col">
+            <label for="exampleFormControlInput1" class="form-label">Variabel N</label>
+            <input type="text" class="form-control" name="var_n" placeholder="0-100" required>
+        </div>
+        <div class="col">
+            <label for="exampleFormControlInput1" class="form-label">Variabel VV</label>
+            <input type="text" class="form-control" name="var_vv" placeholder="0-12" required>
+        </div>
+        <div class="col">
+            <label for="exampleFormControlInput1" class="form-label">Variabel Target U</label>
+            <input type="text" class="form-control" name="var_u" placeholder="75" required>
+        </div>
+        <div class="row g-3">
+            <div class="col d-flex justify-content-center">
+                <button type="submit" class="btn btn-primary col-md-3">Predict</button>
+            </div>
+        </div>
+    </form>
+    <br>
+    <b>{{ prediction_text }}</b>
+    <br>
+    <b>
+        <p>{{ mse }} </p>
+        <p>{{ mape }} </p>
+    </b>
+    <h3>Upload File Prediksi</h3>
+    <form action="/predict_from_excel" method="post" enctype="multipart/form-data">
+        <div class="input-group mb-3">
+            <input type="file" class="form-control" name="file">
+            <label class="input-group-text" for="inputGroupFile02">Upload</label>
+            <small class="text-danger">{{ message_error }}</small>
+        </div>
+        <div class="col d-flex justify-content-center">
+            <input type="submit" value="Predict" class="btn btn-primary col-md-3">
+        </div>
+
+    </form>
+    <div class="container">
+        <h1>Predictions from Excel File</h1>
+
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Po</th>
+                    <th>N</th>
+                    <th>VV</th>
+                    <th>Prediction</th>
+                </tr>
+            </thead>
+            {% if predictions %}
+            <tbody>
+                {% for index in range(predictions|length) %}
+                <tr>
+                    <td>{{ original_values[index]['Po'] }}</td>
+                    <td>{{ original_values[index]['N'] }}</td>
+                    <td>{{ original_values[index]['VV'] }}</td>
+                    <td>{{ predictions[index] }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+            {% else %}
+            <tr>
+                <td colspan="4">No predictions available.</td>
+            </tr>
+            {% endif %}
+        </table>
+        {% if predictions %}
+        <a href="{{ url_for('download') }}?type=excel" class="btn btn-primary col-md-3">Download Excel</a>
+        <a href="{{ url_for('download') }}?type=pdf" class="btn btn-primary col-md-3">Download PDF</a>
+        {% endif %}
+    </div>
+    {{ mse_excel}} <br>
+    {{ mape_excel }} <br>
+    {{ input_data }} <br>
+    {{ target_data }}
+</div>
+{% endblock %}

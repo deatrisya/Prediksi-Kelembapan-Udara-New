@@ -1,0 +1,382 @@
+{% extends 'layouts/main.html' %}
+
+{% block css %}
+<link rel="stylesheet" href="https://cdn.datatables.net/2.0.5/css/dataTables.dataTables.css">
+<style>
+    .sticky-top {
+        top: 20px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-3">
+    <a href="{{ url_for('index') }}" class="text-decoration-none">
+        <div class="card border-0 rounded-9 bg-primary">
+            <div class="card-body p-5">
+                <div class="row">
+                    <div class="col-md-8">
+                        <h1 class="w-75 text-capitalize text-white">
+                            Prediksi Kelembapan Udara
+                        </h1>
+                        <p class="w-75 text-capitalize text-white">Menggunakan Backpropagation dengan Penerapan Seleksi
+                            Fitur
+                            Berbasis Algoritma
+                            Genetika</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </a>
+    <div class="my-3">
+        <div class="row">
+            <div class="my-2 col-md-3">
+                <div class="sticky-top">
+                    <div class="card border-0 bg-light rounded-9  h-100">
+                        <div class="card-body">
+                            <div class="nav flex-column  nav-pills" id="pills-tab" role="tablist">
+                                <button class="nav-link {% if type == 'tutorial' %} active {% endif %}"
+                                    id="pills-tutorial-tab" data-bs-toggle="pill" data-bs-target="#pills-tutorial"
+                                    type="button" role="tab" aria-controls="pills-tutorial" aria-selected="true">
+                                    Panduan dan Info
+                                </button>
+                                <button class="nav-link {% if type == 'manual' %} active {% endif %}"
+                                    id="pills-manual-tab" data-bs-toggle="pill" data-bs-target="#pills-manual"
+                                    type="button" role="tab" aria-controls="pills-manual" aria-selected="true">Prediksi
+                                    Satu Data</button>
+                                <button class="nav-link {% if type == 'upload' %} active {% endif %}"
+                                    id="pills-upload-tab" data-bs-toggle="pill" data-bs-target="#pills-upload"
+                                    type="button" role="tab" aria-controls="pills-upload" aria-selected="true">Upload
+                                    File</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="my-2 col">
+                <div class="card border-0 bg-light rounded-9">
+                    <div class="card-body">
+                        {% if errors and errors|length > 0 %}
+                        <div class="alert alert-danger mb-3">
+                            {% for error in errors %}
+                            <p class="my-0 text-capitalize">{{ error }}</p>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+
+                        {% if success_message %}
+                        <div class="alert alert-success mb-3" id="success-message">
+                            <p class="my-0 text-capitalize">{{ success_message }}</p>
+                        </div>
+                        {% endif %}
+
+                        <div class="tab-content" id="v-pills-tabContent">
+                            <div class="tab-pane fade  {% if type == 'manual' %} show active {% endif %} "
+                                id="pills-manual" role="tabpanel" aria-labelledby="pills-manual-tab">
+                                <div class="alert alert-warning text-capitalize">Harap gunakan titik <b>"."</b>
+                                    sebagai
+                                    pemisah
+                                    desimal,
+                                    <b>bukan</b> koma <b>","</b>
+                                </div>
+
+                                <form class="row g-3 mt-2" action="{{ url_for('predict') }}" method="post">
+                                    <div class="col-md-3">
+                                        <label for="var_po" class="form-label">Tekanan Atmosfer (Po)</label>
+                                        <div class="input-group">
+                                            <input type="number" class="form-control" id="var_po" name="var_po"
+                                                placeholder="758.2" step="0.01" required>
+                                            <span class="input-group-text">mmHg</span>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label for="var_n" class="form-label">Total Tutupan Awan (N)</label>
+                                        <div class="input-group">
+                                            <input type="number" class="form-control" id="var_n" name="var_n"
+                                                placeholder="0-100" required min="0" max="100">
+                                            <span class="input-group-text">%</span>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label for="var_vv" class="form-label">Visibilitas Horizontal
+                                            (VV)</label>
+                                        <div class="input-group">
+                                            <input type="number" class="form-control" id="var_vv" name="var_vv"
+                                                placeholder="0-12" required min="0" max="12">
+                                            <span class="input-group-text">Km</span>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label for="var_u" class="form-label">Kelembapan Udara (U)</label>
+                                        <div class="input-group">
+                                            <input type="number" class="form-control" id="var_u" name="var_u"
+                                                placeholder="75" required min="0" max="100">
+                                            <span class="input-group-text">%</span>
+                                        </div>
+                                    </div>
+
+                                    <div class="col-md-4 offset-md-8 text-end mt-3 d-grid">
+                                        <button type="submit" class="btn btn-primary btn-block">Mulai
+                                            Prediksi</button>
+                                    </div>
+                                </form>
+
+                                {% if prediction_text %}
+                                <div class="col-md-12">
+                                    <div class="mt-3 table-responsive">
+                                        <table class="table table-striped table-bordered" id="table-data">
+                                            <thead>
+                                                <tr>
+                                                    <th>Tekanan Atmosfer (Po)</th>
+                                                    <th>Total Tutupan Awan (N) %</th>
+                                                    <th>Visibilitas Horizontal (VV) Km</th>
+                                                    <th>Prediksi Kelembapan Udara (U) %</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <tr>
+                                                    <td>{{ var_po}}</td>
+                                                    <td>{{ var_n}} </td>
+                                                    <td>{{ var_vv}}</td>
+                                                    <td>{{ prediction_text }}</td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                    <div class="alert alert-success" role="alert">
+                                        <p class="mb-0"><b>MSE :</b>{{ mse }}</p>
+                                        <p class="mb-0"><b>MAPE :</b>{{ mape }}</p>
+                                    </div>
+                                </div>
+                                {% endif %}
+                            </div>
+                            <div class="tab-pane fade {% if type == 'upload' %} show active {% endif %}"
+                                id="pills-upload" role="tabpanel" aria-labelledby="pills-upload-tab">
+                                <form action="{{ url_for('predict_from_excel') }}" method="post"
+                                    enctype="multipart/form-data">
+                                    <div class="row">
+                                        <div class="col-md-12">
+                                            <div class="alert alert-warning text-capitalize">Pastikan file
+                                                memiliki header kolom <b>[Po],[N],[VV],</b> dan <b>[U]</b></div>
+                                            <div class="form-group">
+                                                <label for="file" class="form-label">Pilih File</label>
+                                                <input type="file" name="file" id="file" class="form-control" required
+                                                    accept=".xlsx, .csv" />
+
+                                                <p class="mt-3"><span class="text-danger">*</span> Belum memiliki file ?
+                                                    <a href="{{ url_for('template') }}">Download Template</a></p>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-4 offset-md-8 text-end mt-3 d-grid">
+                                            <button type="submit" class="btn btn-primary btn-block">Mulai
+                                                Prediksi</button>
+                                        </div>
+                                    </div>
+                                </form>
+
+                                {% if predictions %}
+                                <div class="mt-3 table-responsive">
+                                    <table class="table table-striped table-bordered" id="table-data">
+                                        <thead>
+                                            <tr>
+                                                <th>Tekanan Atmosfer (Po)</th>
+                                                <th>Total Tutupan Awan (N)</th>
+                                                <th>Visibilitas Horizontal (VV)</th>
+                                                <th>Prediksi Kelembapan Udara (U)</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for index in range(predictions|length) %}
+                                            <tr>
+                                                <td>{{ original_values[index]['Po'] }}</td>
+                                                <td>{{ original_values[index]['N'] }}</td>
+                                                <td>{{ original_values[index]['VV'] }}</td>
+                                                <td>{{ predictions[index] }}</td>
+                                            </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+
+                                    <div class="alert alert-success mt-2" role="alert">
+                                        <p class="mb-0"><b>MSE :</b> {{ mse_excel }}</p>
+                                        <p class="mb-0"><b>MAPE :</b>{{ mape_excel }}</p>
+
+                                        <div class="row">
+                                            <div class="col-md-12 text-end">
+                                                <a href="{{ url_for('download') }}?type=excel"
+                                                    class="btn btn-primary col-md-3">Download
+                                                    Excel</a>
+                                                <a href="{{ url_for('download') }}?type=pdf"
+                                                    class="btn btn-primary col-md-3">Download
+                                                    PDF</a>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endif %}
+                            </div>
+                            <div class="tab-pane fade {% if type == 'tutorial' %} show active {% endif %}"
+                                id="pills-tutorial" role="tabpanel" aria-labelledby="pills-tutorial-tab">
+                                <!-- Conclusion Section -->
+                                <section>
+                                    <div class="row">
+                                        <div class="col-md-12">
+                                            <h4>Video Tutorial</h4>
+                                        </div>
+                                        <div class="col">
+                                            <iframe width="100%" height="315"
+                                                src="https://www.youtube.com/embed/4g3pvEe30V4?si=2vdHOyCpTOVEsbYJ"
+                                                title="YouTube video player" frameborder="0"
+                                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                                                referrerpolicy="strict-origin-when-cross-origin"
+                                                allowfullscreen></iframe>
+                                        </div>
+                                    </div>
+                                </section>
+
+                                <section class="mt-5">
+                                    <h4>Panduan Upload File</h4>
+                                    <p><a href="{{ url_for('template') }}">Download Template</a>
+                                        lalu upload file yang sudah terisi dimenu <b>Upload File</b></p>
+                                </section>
+
+                                <!-- Introduction Section -->
+                                <section class="mt-5">
+                                    <h4>Panduan Prediksi Satu Data</h4>
+                                    <!-- <p>This tutorial will guide you through the process of [explain the subject briefly]. By the end of this tutorial, you will be able to [state what the user will learn or accomplish].</p> -->
+                                </section>
+
+                                <!-- Steps Section -->
+                                <section id="steps">
+                                    <div class="card mb-2">
+                                        <div class="card-header">Po (Tekanan Atmosfer)</div>
+                                        <div class="card-body">
+                                            <p class="card-text">Tekanan atmosfer yang diukur dalam satuan milimeter
+                                                raksa (mmHg).</p>
+                                            <small><b>Satuan: </b> mmHg</small>
+                                        </div>
+                                    </div>
+                                    <div class="card mb-2">
+                                        <div class="card-header">N (Total Tutupan Awan)</div>
+                                        <div class="card-body">
+                                            <p class="card-text">Persentase total tutupan awan. Rentang nilai
+                                                berdasarkan kondisi awan.</p>
+                                            <small><b>Satuan: </b> %</small>
+
+                                            <table class="table table-bordered">
+                                                <thead>
+                                                    <tr>
+                                                        <th class="text-center">Label</th>
+                                                        <th class="text-center">Rentang Nilai</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    <tr>
+                                                        <td class="text-center">0</td>
+                                                        <td>10% atau kurang, tetapi tidak 0% (10% or less, but not 0)
+                                                        </td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td class="text-center">1</td>
+                                                        <td>100%</td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td class="text-center">2</td>
+                                                        <td>20-30%</td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td class="text-center">3</td>
+                                                        <td>40%</td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td class="text-center">4</td>
+                                                        <td>50%</td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td class="text-center">5</td>
+                                                        <td>60%</td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td class="text-center">6</td>
+                                                        <td>70-80%</td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td class="text-center">7</td>
+                                                        <td>90% atau lebih, tetapi tidak 100% (90% or more, but not
+                                                            100%)</td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td class="text-center">8</td>
+                                                        <td>Tidak ada awan (no clouds)</td>
+                                                    </tr>
+                                                </tbody>
+                                            </table>
+
+                                        </div>
+                                    </div>
+                                    <div class="card mb-2">
+                                        <div class="card-header">VV (Visibilitas Horizontal)</div>
+                                        <div class="card-body">
+                                            <p class="card-text">Jarak visibilitas horizontal yang diukur dalam
+                                                kilometer.</p>
+                                            <p class="my-0"><small><b>Satuan: </b> Km</small></p>
+                                            <p class="my-0"><small><b>Rentang Nilai</b>: 0 - 12 Km</small></p>
+                                        </div>
+                                    </div>
+                                    <div class="card mb-2">
+                                        <div class="card-header">U (Kelembapan Udara)</div>
+                                        <div class="card-body">
+                                            <p class="card-text">Kelembapan udara yang diukur dalam persentase.</p>
+                                            <p class="my-0"><small><b>Satuan: </b> %</small></p>
+                                            <p class="my-0"><small><b>Rentang Nilai</b>: 0 - 100%</small></p>
+                                        </div>
+                                    </div>
+                                </section>
+
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block js %}
+<script src="https://code.jquery.com/jquery-3.7.1.js"></script>
+<script src="https://cdn.datatables.net/2.0.5/js/dataTables.js"></script>
+
+{% if predictions and type == 'upload' %}
+<script>
+    // set table
+    new DataTable('#table-data', {
+        layout: {
+            bottomEnd: {
+                paging: {
+                    boundaryNumbers: false
+                }
+            }
+        }
+    });
+</script>
+{% endif %}
+
+<script>
+    // set timer alert
+    // Tunggu sampai dokumen HTML selesai dimuat
+    document.addEventListener("DOMContentLoaded", function () {
+        // Temukan elemen dengan ID "success-message"
+        var successMessage = document.getElementById("success-message");
+
+        // Jika elemen ditemukan
+        if (successMessage) {
+            // Atur timer untuk menyembunyikan elemen setelah 3 detik (3000 milidetik)
+            setTimeout(function () {
+                successMessage.style.display = "none";
+            }, 3000);
+        }
+    });
+</script>
+{% endblock %}
