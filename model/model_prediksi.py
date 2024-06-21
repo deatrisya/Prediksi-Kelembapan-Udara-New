@@ -60,14 +60,14 @@ numeric_values = pd.to_numeric(df_latih[column_to_check], errors='coerce')
 non_numeric_rows = df_latih[numeric_values.isna()]
 
 # Tampilkan baris yang memiliki nilai non-numerik
-print("\nBaris dengan nilai non-numerik:")
-print(non_numeric_rows)
+# print("\nBaris dengan nilai non-numerik:")
+# print(non_numeric_rows)
 
 # Mengganti data 'less than 0.1'
 df_latih[column_to_check] = df_latih[column_to_check].replace('less than 0.1', 1.0)
 
 # Menampilkan Baris data setelah perbaikan
-print("\nBaris VV Setelah Penggantian:")
+# print("\nBaris VV Setelah Penggantian:")
 # print(df_latih.loc[[5651, 6663]])
 
 """## Label Encoder
@@ -97,8 +97,8 @@ for col_name in kolom_kategorikal:  # Loop hanya pada kolom kategorikal
 df_latih.head()
 
 # Mengidentifikasi nilai kosong dalam DataFrame
-nilai_kosong = df_latih.isnull().sum()
-print(nilai_kosong)
+# nilai_kosong = df_latih.isnull().sum()
+# print(nilai_kosong)
 
 """## Memperbaiki missing value"""
 
@@ -112,11 +112,11 @@ imputer_numeric = KNNImputer(n_neighbors=5)
 df_latih[columns_numeric] = imputer_numeric.fit_transform(df_latih[columns_numeric])
 
 # Menampilkan dataset setelah imputasi
-print("\nDataFrame Setelah Imputasi:")
-print(df_latih)
+# print("\nDataFrame Setelah Imputasi:")
+# print(df_latih)
 # Mengidentifikasi nilai kosong dalam DataFrame
-nilai_kosong = df_latih.isnull().sum()
-print(nilai_kosong)
+# nilai_kosong = df_latih.isnull().sum()
+# print(nilai_kosong)
 
 """## Normalisasi Min-Max Scaling
 
@@ -143,8 +143,8 @@ minmax_scaler = MinMaxScaler()
 df_normalized = pd.DataFrame(minmax_scaler.fit_transform(df_latih), columns=df_latih.columns)
 
 # Menampilkan hasil normalisasi
-print("Min-Max Scaled Data Latih:")
-print(df_normalized.head())
+# print("Min-Max Scaled Data Latih:")
+# print(df_normalized.head())
 
 """## Train Test Split"""
 
@@ -158,24 +158,45 @@ y = df_normalized['U']  # Memilih kolom target 'U'
 # Train-test split dengan rasio 80% pelatihan dan 20% pengujian
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
-# Menampilkan ukuran setiap bagian
-print("Jumlah data pelatihan:", len(X_train))
-print("Jumlah data pengujian:", len(X_test))
+from datetime import datetime
+import pytz
 
-print("Ukuran X_train:", X_train.shape)
-print("Ukuran y_train:", y_train.shape)
-print("Ukuran X_test:", X_test.shape)
-print("Ukuran y_test:", y_test.shape)
+# Mendapatkan waktu saat ini dalam zona waktu lokal
+# local_tz = pytz.timezone('Asia/Jakarta')  # Sesuaikan dengan zona waktu lokal Anda
+# current_time = datetime.now(local_tz).strftime("%Y-%m-%d_%H-%M-%S")
+
+# Menyimpan data ke file Excel dengan menyisipkan waktu saat ini dalam nama file
+# X_asli_train_file_name = f'X_asli_train_{current_time}.xlsx'
+# X_train.to_excel(X_asli_train_file_name, index=False)
+
+# y_asli_train_file_name = f'y_asli_train_{current_time}.xlsx'
+# y_train.to_excel(y_asli_train_file_name, index=False)
+
+# X_asli_test_file_name = f'X_asli_test_{current_time}.xlsx'
+# X_test.to_excel(X_asli_test_file_name, index=False)
+
+# y_asli_test_file_name = f'y_asli_test_{current_time}.xlsx'
+# y_test.to_excel(y_asli_test_file_name, index=False)
+
+
+# Menampilkan ukuran setiap bagian
+# print("Jumlah data pelatihan:", len(X_train))
+# print("Jumlah data pengujian:", len(X_test))
+
+# print("Ukuran X_train:", X_train.shape)
+# print("Ukuran y_train:", y_train.shape)
+# print("Ukuran X_test:", X_test.shape)
+# print("Ukuran y_test:", y_test.shape)
 
 # Menampilkan data latih
-print("Data Latih:")
-print(X_train)
-print("\n",y_train)
+# print("Data Latih:")
+# print(X_train)
+# print("\n",y_train)
 
 # Menampilkan data uji
-print("\nData Uji:")
-print(X_test)
-print("\n",y_test)
+# print("\nData Uji:")
+# print(X_test)
+# print("\n",y_test)
 
 """# Library Backpropagation
 
@@ -329,11 +350,12 @@ def select_features(solution, df):
 
 # Pilih fitur-fitur yang sesuai dengan best solution
 selected_features_test = select_features(best_solution, X_test)
-print('Variabel Sub Fitur Terpilih')
-print(selected_features_test.columns)
 
-print('\nselected_features_test')
-print(selected_features_test)
+# print('Variabel Sub Fitur Terpilih')
+# print(selected_features_test.columns)
+
+# print('\nselected_features_test')
+# print(selected_features_test)
 
 """## Prediksi Data Uji"""
 
@@ -370,8 +392,8 @@ input_data = selected_features_test.values
 target_data = np.array(y_test)
 
 # Lakukan prediksi dengan data uji
-y_pred = bp.predict(input_data,target_data.reshape(-1,1))
-# y_pred   = bp.predict(input_data)
+# y_pred = bp.predict(input_data,target_data.reshape(-1,1))
+y_pred   = bp.predict_new_value(input_data)
 
 #Denormalisasi
 scaler_U = MinMaxScaler() # Membuat skalar baru untuk kolom U
@@ -387,11 +409,12 @@ df_results_test = pd.DataFrame({
     'Denormalisasi Nilai Target': y_test_denorm
 })
    # print('\nPerbandingan Hasil Normalisasi & Denormalisasi')
-print(df_results_test)
+# print(df_results_test)
+# df_results_test.to_excel('Hasil Prediksi.xlsx', index=False)
 
 
-t2 = time.perf_counter()
-print('Waktu yang dibutuhkan untuk eksekusi', t2-t1, 'detik')
+# t2 = time.perf_counter()
+# print('Waktu yang dibutuhkan untuk eksekusi', t2-t1, 'detik')
 
 """# Evaluasi MSE
 
@@ -402,7 +425,7 @@ from sklearn.metrics import mean_squared_error, mean_absolute_percentage_error
 
 # # Menghitung MSE data uji denormalisasi
 mse_test = mean_squared_error(y_test_denorm, y_pred_denorm)
-print("Mean Squared Error:", mse_test)
+# print("Mean Squared Error:", mse_test)
 
 # Menghitung MSE data uji normalisasi
 # mse_test = mean_squared_error(y_test, y_pred)
@@ -416,8 +439,8 @@ print("Mean Squared Error:", mse_test)
 # Menghitung MAPE data uji denormalisasi
 mape_test = mean_absolute_percentage_error(y_test_denorm, y_pred_denorm)
 mape_test_percent = round(mape_test,2)
-print("Mean Absolute Percentage Error:", mape_test)
-print("Mean Absolute Percentage Error (in percent):", mape_test_percent,"%")
+# print("Mean Absolute Percentage Error:", mape_test)
+# print("Mean Absolute Percentage Error (in percent):", mape_test_percent,"%")
 
 # Menghitung MAPE data uji normalisasi
 # mape_test = mean_absolute_percentage_error(y_test, y_pred)
@@ -438,7 +461,6 @@ with open('model.pkl', 'wb') as f:
 
 # # Simpan scaler ke file menggunakan pickle
 # with open('preprocessing.pkl', 'wb') as f:
-#     pickle.dump(minmax_scaler, f)
-
+#     pickle.dump(minmax_scaler,f)
 # with open('neuralnetwork.pkl', 'wb') as f:
 #     pickle.dump(nn, f)

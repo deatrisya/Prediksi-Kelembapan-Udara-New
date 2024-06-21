@@ -12,6 +12,8 @@ from reportlab.lib import colors
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph
 from reportlab.lib.styles import ParagraphStyle
 
+import logging
+logging.basicConfig(level=logging.DEBUG)
 
 # import xlsxwriter
 from io import BytesIO
@@ -22,20 +24,17 @@ from model_prediksi import NeuralNetwork, Sigmoid, Backpropagation
 
 app = Flask(__name__)
 
-# Memuat model dari file 'model.pkl'
-with open('model.pkl', 'rb') as f:
-    model = pickle.load(f)
+def load_model():
+    with open('model.pkl', 'rb') as f:
+        model = pickle.load(f)
+    return model
 
-# Memuat scaler dari file 'scaler.pkl' untuk kolom U
-with open('scaler.pkl', 'rb') as f:
-    target_scaler = pickle.load(f)
-
-# Membaca skalernya dari file pickle
-with open('preprocessing.pkl', 'rb') as f:
-    feature_scaler = pickle.load(f)
-
-# with open('neuralnetwork.pkl', 'rb') as f:
-#     nn = pickle.load(f)
+def load_scalers():
+    with open('scaler.pkl', 'rb') as f:
+        target_scaler = pickle.load(f)
+    with open('preprocessing.pkl', 'rb') as f:
+        feature_scaler = pickle.load(f)
+    return target_scaler, feature_scaler
 
 @app.route('/main')
 def main():
@@ -43,7 +42,8 @@ def main():
 
 @app.route('/')
 def index():
-    return render_template('home/index_new.html',
+    return render_template('home/index2.html',
+                           
     type='tutorial')
 
 
@@ -148,41 +148,49 @@ def generate_pdf_with_table(file_path, data):
 @app.route('/predict', methods=['POST'])
 def predict():
     try:
+        model = load_model()
+        target_scaler, feature_scaler = load_scalers()
+
         var_po = float(request.form['var_po'])
         var_n = int(request.form['var_n']) # tambahkan rentang
         var_vv = float(request.form['var_vv'])
-        y_test = int(request.form['var_u'])
 
         var_n_converted = convert_to_label(var_n)
         input_data = np.array([[var_po, var_n_converted, var_vv]])  # Menggabungkan nilai-nilai ke dalam array
+        # Print statements for debugging
+        print(f"Input Data (Original): {input_data}")
     
         normalized_input_data = feature_scaler.fit_transform(input_data)
         # Normalisasi data target
-        normalized_target_data = target_scaler.transform(np.array([[y_test]]).reshape(-1, 1))
+        # normalized_target_data = target_scaler.transform(np.array([[y_test]]).reshape(-1, 1))
 
-        y_pred = model.predict(normalized_input_data,normalized_target_data)
+        # Print statements for debugging
+        print(f"Normalized Input Data: {normalized_input_data}")
+        # print(f"Normalized Target Data: {normalized_target_data}")
+
+        y_pred = model.predict_new_value(normalized_input_data)
 
         y_pred_denorm = target_scaler.inverse_transform(np.array(y_pred).reshape(-1, 1))[:, 0]  # Denormalisasi hasil prediksi
 
-        # Hitung MSE menggunakan denormalisasi data
-        mse_test = calculate_mse([y_test],[y_pred_denorm])
-        # Hitung MAPE menggunakan denormalisasi data
-        mape_test = calculate_mape([y_test],[y_pred_denorm])
+        # Print statements for debugging
+        print(f"Predicted Normalized Output: {y_pred}")
+        print(f"Denormalized Prediction: {y_pred_denorm}")
 
-        return render_template('home/index_new.html',
+        return render_template('home/index2.html',
                             var_po = var_po,
                             var_n = var_n,
                             var_vv = var_vv,
                             prediction_text = y_pred_denorm[0],
-                            mse = mse_test,
-                            mape = f'{mape_test * 100:.2f}%',
                             type='manual',
                             success_message='berhasil melakukan prediksi')
     except Exception as e:
-        return render_template('home/index_new.html', errors=[str(e)], type='manual')
+        return render_template('home/index2.html', errors=[str(e)], type='manual')
 
 @app.route('/predict_from_excel', methods=['POST'])
 def predict_from_excel():
+    model = load_model()
+    target_scaler, feature_scaler = load_scalers()
+
     if 'file' not in request.files:
         return redirect(request.url)
     
@@ -190,7 +198,7 @@ def predict_from_excel():
 
     # Cek apakah file ada dan memiliki ekstensi yang diizinkan (xlsx atau csv)
     if file.filename == '' or not (file.filename.endswith('.xlsx') or file.filename.endswith('.csv')):
-        return render_template('home/index_new.html', 
+        return render_template('home/index2.html', 
             errors=['Format file harus .xlsx atau .csv'], 
             type='upload')
 
@@ -201,7 +209,7 @@ def predict_from_excel():
     
     original_values = []
     input_data = []
-    target_data = []
+    # target_data = []
     predictions = []
 
     # Konversi nilai kolom VV ke numerik dan tangani nilai non-numerik
@@ -212,7 +220,7 @@ def predict_from_excel():
         var_po = row['Po']
         var_n = row['N']
         var_vv = row['VV']
-        y_test = row['U']
+        # y_test = row['U']
 
         # Mengganti karakter yang tidak terbaca pada kolom 'N'
         if isinstance(var_n, str):
@@ -231,7 +239,7 @@ def predict_from_excel():
             var_n_converted = convert_to_label(var_n)
 
         input_data.append([var_po, var_n_converted, var_vv]) 
-        target_data.append([y_test])
+        # target_data.append([y_test])
     
 
     # Imputasi data input
@@ -240,26 +248,26 @@ def predict_from_excel():
     # input_data[input_columns_numeric] = input_data_imputed
 
     # Imputasi data target
-    target_imputer = KNNImputer(n_neighbors=5)
-    target_data_imputed = target_imputer.fit_transform(target_data)
+    # target_imputer = KNNImputer(n_neighbors=5)
+    # target_data_imputed = target_imputer.fit_transform(target_data)
     # target_data[target_columns_numeric] = target_data_imputed
 
     normalized_input_data = feature_scaler.fit_transform(input_data_imputed)
     # Normalisasi data target
-    normalized_target_data = feature_scaler.fit_transform(target_data)
+    # normalized_target_data = feature_scaler.fit_transform(target_data)
 
 
-    for norm_input, norm_target in zip(normalized_input_data, normalized_target_data):
+    for norm_input in zip(normalized_input_data):
 
-        y_pred = model.predict(norm_input.reshape(1, -1), norm_target.reshape(1, -1))
+        y_pred = model.predict_new_value(norm_input)
         
         y_pred_denorm = target_scaler.inverse_transform(np.array(y_pred).reshape(-1, 1))[:, 0]
         predictions.append(y_pred_denorm[0])
 
     # Hitung MSE menggunakan denormalisasi data
-    mse_test = calculate_mse(target_data_imputed,predictions)
+    # mse_test = calculate_mse(target_data_imputed,predictions)
     # Hitung MAPE menggunakan denormalisasi data
-    mape_test = calculate_mape(target_data_imputed,predictions)  
+    # mape_test = calculate_mape(target_data_imputed,predictions)  
 
     # Generate Excel File
     excel_data = {
@@ -282,10 +290,10 @@ def predict_from_excel():
 
     generate_pdf_with_table('results/output.pdf', pdf_data)
 
-    return render_template('home/index_new.html', predictions=predictions,
+    return render_template('home/index2.html', predictions=predictions,
                             original_values=original_values,
-                            mse_excel = mse_test,
-                            mape_excel=f' { mape_test * 100:.2f} %',
+                            # mse_excel = mse_test,
+                            # mape_excel=f' { mape_test * 100:.2f} %',
                             type='upload',
                             success_message='berhasil melakukan prediksi')
 
@@ -299,7 +307,7 @@ def download():
 
 @app.route('/template', methods=['GET'])
 def template():
-    return send_file('static/template.xlsx', as_attachment=True, download_name='Template Prediksi.xlsx')
+    return send_file('static/template_nontarget.xlsx', as_attachment=True, download_name='Template Prediksi.xlsx')
 
 
 if __name__ == '__main__':
