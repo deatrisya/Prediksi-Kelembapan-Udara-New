@@ -11,6 +11,7 @@ from reportlab.lib.pagesizes import letter
 from reportlab.lib import colors
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph
 from reportlab.lib.styles import ParagraphStyle
+from sklearn.preprocessing import MinMaxScaler
 
 import logging
 logging.basicConfig(level=logging.DEBUG)
@@ -35,6 +36,16 @@ def load_scalers():
     with open('preprocessing.pkl', 'rb') as f:
         feature_scaler = pickle.load(f)
     return target_scaler, feature_scaler
+
+def extract_scaler_for_features(scaler, feature_indices):
+    new_scaler = MinMaxScaler()
+    new_scaler.min_ = scaler.min_[feature_indices]
+    new_scaler.scale_ = scaler.scale_[feature_indices]
+    new_scaler.data_min_ = scaler.data_min_[feature_indices]
+    new_scaler.data_max_ = scaler.data_max_[feature_indices]
+    new_scaler.data_range_ = scaler.data_range_[feature_indices]
+    return new_scaler
+
 
 @app.route('/main')
 def main():
@@ -146,6 +157,7 @@ def generate_pdf_with_table(file_path, data):
 
 
 @app.route('/predict', methods=['POST'])
+
 def predict():
     try:
         model = load_model()
@@ -159,10 +171,12 @@ def predict():
         input_data = np.array([[var_po, var_n_converted, var_vv]])  # Menggabungkan nilai-nilai ke dalam array
         # Print statements for debugging
         print(f"Input Data (Original): {input_data}")
-    
-        normalized_input_data = feature_scaler.fit_transform(input_data)
-        # Normalisasi data target
-        # normalized_target_data = target_scaler.transform(np.array([[y_test]]).reshape(-1, 1))
+        
+        feature_indices = [1, 7, 13]  # Sesuaikan dengan indeks Po, N, dan VV dalam scaler asli
+        # Ekstrak scaler untuk 3 fitur yang diperlukan
+        feature_scaler_3 = extract_scaler_for_features(feature_scaler, feature_indices)
+         # Transform data input menggunakan scaler yang diekstrak
+        normalized_input_data = feature_scaler_3.transform(input_data)
 
         # Print statements for debugging
         print(f"Normalized Input Data: {normalized_input_data}")
@@ -312,3 +326,46 @@ def template():
 
 if __name__ == '__main__':
     app.run(debug=True)
+
+
+
+# fungsi prediksi 1 data yang lama
+# def predict():
+#     try:
+#         model = load_model()
+#         target_scaler, feature_scaler = load_scalers()
+
+#         var_po = float(request.form['var_po'])
+#         var_n = int(request.form['var_n']) # tambahkan rentang
+#         var_vv = float(request.form['var_vv'])
+
+#         var_n_converted = convert_to_label(var_n)
+#         input_data = np.array([[var_po, var_n_converted, var_vv]])  # Menggabungkan nilai-nilai ke dalam array
+#         # Print statements for debugging
+#         print(f"Input Data (Original): {input_data}")
+    
+#         normalized_input_data = feature_scaler.fit_transform(input_data)
+#         # Normalisasi data target
+#         # normalized_target_data = target_scaler.transform(np.array([[y_test]]).reshape(-1, 1))
+
+#         # Print statements for debugging
+#         print(f"Normalized Input Data: {normalized_input_data}")
+#         # print(f"Normalized Target Data: {normalized_target_data}")
+
+#         y_pred = model.predict_new_value(normalized_input_data)
+
+#         y_pred_denorm = target_scaler.inverse_transform(np.array(y_pred).reshape(-1, 1))[:, 0]  # Denormalisasi hasil prediksi
+
+#         # Print statements for debugging
+#         print(f"Predicted Normalized Output: {y_pred}")
+#         print(f"Denormalized Prediction: {y_pred_denorm}")
+
+#         return render_template('home/index2.html',
+#                             var_po = var_po,
+#                             var_n = var_n,
+#                             var_vv = var_vv,
+#                             prediction_text = y_pred_denorm[0],
+#                             type='manual',
+#                             success_message='berhasil melakukan prediksi')
+#     except Exception as e:
+#         return render_template('home/index2.html', errors=[str(e)], type='manual')
